@@ -1,0 +1,49 @@
+name: Build MobileGL on ARM64 (Ubuntu 24.04, Clang, C++23)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: arm64v8/ubuntu:24.04
+      options: --platform linux/arm64
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git cmake build-essential clang libc++-dev libc++abi-dev
+
+      - name: Clone repository
+        run: git clone https://github.com/MobileGL-Dev/MobileGL.git
+
+      - name: Update submodules
+        run: |
+          cd MobileGL
+          git submodule update --init --recursive
+
+      - name: Configure with CMake (C++23, Clang)
+        run: |
+          cd MobileGL
+          cmake -B build \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_CXX_STANDARD=23 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+            -DCMAKE_CXX_FLAGS="-stdlib=libc++"
+
+      - name: Build
+        run: |
+          cd MobileGL
+          cmake --build build
+
+      - name: Upload build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobilegl-arm64-build
+          path: MobileGL/build/
